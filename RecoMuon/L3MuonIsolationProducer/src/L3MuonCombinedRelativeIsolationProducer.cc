@@ -50,38 +50,40 @@ L3MuonCombinedRelativeIsolationProducer::L3MuonCombinedRelativeIsolationProducer
   {
   LogDebug("RecoMuon|L3MuonCombinedRelativeIsolationProducer")<<" L3MuonCombinedRelativeIsolationProducer CTOR";
 
-  if (optOutputIsoDeposits) {
-    produces<reco::IsoDepositMap>("trkIsoDeposits");
-    if( useRhoCorrectedCaloDeps==false ) // otherwise, calo deposits have been previously computed
-      produces<reco::IsoDepositMap>("caloIsoDeposits");
-    //produces<std::vector<double> >("combinedRelativeIsoDeposits");
-    produces<edm::ValueMap<double> >("combinedRelativeIsoDeposits");
-  }
-  produces<edm::ValueMap<bool> >();
-
   //
   // Extractor
   //
   // Calorimeters (ONLY if not previously computed)
+  //  setting useRhoCorrectedCaloDeps==false && leaving caloExtractorPSet empty ignores calo iso
   //
   if( useRhoCorrectedCaloDeps==false ) {
     edm::ParameterSet caloExtractorPSet = theConfig.getParameter<edm::ParameterSet>("CaloExtractorPSet");
 
-    theTrackPt_Min = theConfig.getParameter<double>("TrackPt_Min");
-    std::string caloExtractorName = caloExtractorPSet.getParameter<std::string>("ComponentName");
-    caloExtractor = IsoDepositExtractorFactory::get()->create( caloExtractorName, caloExtractorPSet, consumesCollector());
-    //std::string caloDepositType = caloExtractorPSet.getUntrackedParameter<std::string>("DepositLabel"); // N.B. Not used in the following!
+    if (!caloExtractorPSet.empty()) {
+      std::string caloExtractorName = caloExtractorPSet.getParameter<std::string>("ComponentName");
+      caloExtractor = IsoDepositExtractorFactory::get()->create( caloExtractorName, caloExtractorPSet, consumesCollector());
+      //std::string caloDepositType = caloExtractorPSet.getUntrackedParameter<std::string>("DepositLabel"); // N.B. Not used in the following!
+    }
   }
 
   // Tracker
   //
   edm::ParameterSet trkExtractorPSet = theConfig.getParameter<edm::ParameterSet>("TrkExtractorPSet");
 
+  theTrackPt_Min = theConfig.getParameter<double>("TrackPt_Min");
   std::string trkExtractorName = trkExtractorPSet.getParameter<std::string>("ComponentName");
   trkExtractor = IsoDepositExtractorFactory::get()->create( trkExtractorName, trkExtractorPSet, consumesCollector());
   //std::string trkDepositType = trkExtractorPSet.getUntrackedParameter<std::string>("DepositLabel"); // N.B. Not used in the following!
 
-
+  if (optOutputIsoDeposits) {
+    produces<reco::IsoDepositMap>("trkIsoDeposits");
+    // check if calo deposits have already been computed or aren't being used
+    if( (useRhoCorrectedCaloDeps==false) && (caloExtractor != 0) ) 
+      produces<reco::IsoDepositMap>("caloIsoDeposits");
+    //produces<std::vector<double> >("combinedRelativeIsoDeposits");
+    produces<edm::ValueMap<double> >("combinedRelativeIsoDeposits");
+  }
+  produces<edm::ValueMap<bool> >();
 
   //
   // Cuts for track isolation
@@ -164,7 +166,7 @@ void L3MuonCombinedRelativeIsolationProducer::produce(Event& event, const EventS
   if(useRhoCorrectedCaloDeps) {
     caloCorrDeps.resize(nMuons, 0.);
   }
-  else {
+  else if (caloExtractor != 0) {
     caloVetos.resize(nMuons);
     caloDeps.resize(nMuons);
   }
@@ -182,7 +184,7 @@ void L3MuonCombinedRelativeIsolationProducer::produce(Event& event, const EventS
     if( useRhoCorrectedCaloDeps ) {
       caloCorrDeps[i] = (*caloDepWithCorrMap)[mu];
     }
-    else {
+    else if (caloExtractor != 0) {
       caloDeps[i] = caloExtractor->deposit(event, eventSetup, *mu);
       caloVetos[i] = caloDeps[i].veto();
     }
@@ -225,7 +227,7 @@ void L3MuonCombinedRelativeIsolationProducer::produce(Event& event, const EventS
       if(caloIsoSum<0.) caloIsoSum = 0.;
       if(printDebug) std::cout << "Rho-corrected calo deposit (min. 0) = " << caloIsoSum << std::endl;
     }
-    else {
+    else if (caloExtractor != 0) {
       const IsoDeposit & caloDeposit = caloDeps[iMu];
       if (printDebug) std::cout  << caloDeposit.print();
       caloIsoSum = caloDeposit.depositWithin(cut.conesize, caloVetos);
@@ -260,7 +262,7 @@ void L3MuonCombinedRelativeIsolationProducer::produce(Event& event, const EventS
     depFillerTrk.fill();
     event.put(trkDepMap, "trkIsoDeposits");
 
-    if( useRhoCorrectedCaloDeps==false ) {
+    if( (useRhoCorrectedCaloDeps==false) && (caloExtractor != 0) ) {
       reco::IsoDepositMap::Filler depFillerCalo(*caloDepMap);
       depFillerCalo.insert(muons, caloDeps.begin(), caloDeps.end());
       depFillerCalo.fill();
