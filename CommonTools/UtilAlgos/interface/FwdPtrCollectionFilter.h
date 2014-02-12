@@ -32,7 +32,7 @@ namespace edm {
     srcToken_( consumes< std::vector< edm::FwdPtr<T> > >( params.getParameter<edm::InputTag>("src") ) ),
     srcViewToken_( mayConsume< edm::View<T>  >( params.getParameter<edm::InputTag>("src") ) ),
     filter_(false), makeClones_(false),
-      selector_( params )
+    selector_( params, edm::EDFilter::consumesCollector() )
     {
       if ( params.exists("filter") ) {
 	filter_ = params.getParameter<bool>("filter");

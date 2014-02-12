@@ -25,7 +25,7 @@ namespace reco{
   template< typename T, bool Lazy>
     class StringCutObjectSelectorHandler : public StringCutObjectSelector<T,Lazy>  {
     public:
-      explicit StringCutObjectSelectorHandler( const edm::ParameterSet & cfg ) :
+      explicit StringCutObjectSelectorHandler( const edm::ParameterSet & cfg, edm::ConsumesCollector && iC ) :
         StringCutObjectSelector<T, Lazy>(cfg.getParameter<std::string>("cut"))
       {
       }

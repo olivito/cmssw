@@ -24,7 +24,7 @@ namespace reco {
 namespace reco{
     class PdgIdSelectorHandler : public PdgIdSelector  {
     public:
-      explicit PdgIdSelectorHandler( const edm::ParameterSet & cfg ) :
+      explicit PdgIdSelectorHandler( const edm::ParameterSet & cfg, edm::ConsumesCollector && iC ) :
         PdgIdSelector(cfg.getParameter<std::vector<int> >("pdgId"))
       {
       }
