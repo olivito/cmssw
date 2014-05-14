@@ -32,6 +32,7 @@ HLTMuonTrkFilter::HLTMuonTrkFilter(const edm::ParameterSet& iConfig) : HLTFilter
   m_candsToken        = consumes<reco::RecoChargedCandidateCollection>(m_candsTag);
   m_minTrkHits        = iConfig.getParameter<int>("minTrkHits");
   m_minMuonHits       = iConfig.getParameter<int>("minMuonHits");
+  m_minMuonStations   = iConfig.getParameter<int>("minMuonStations");
   m_maxNormalizedChi2 = iConfig.getParameter<double>("maxNormalizedChi2");
   m_allowedTypeMask   = iConfig.getParameter<unsigned int>("allowedTypeMask");
   m_requiredTypeMask  = iConfig.getParameter<unsigned int>("requiredTypeMask");
@@ -47,6 +48,7 @@ HLTMuonTrkFilter::fillDescriptions(edm::ConfigurationDescriptions& descriptions)
   desc.add<edm::InputTag>("inputCandCollection",edm::InputTag(""));
   desc.add<int>("minTrkHits",-1);
   desc.add<int>("minMuonHits",-1);
+  desc.add<int>("minMuonStations",-1);
   desc.add<double>("maxNormalizedChi2",1e99);
   desc.add<unsigned int>("allowedTypeMask",255);
   desc.add<unsigned int>("requiredTypeMask",0);
@@ -70,6 +72,7 @@ HLTMuonTrkFilter::hltFilter(edm::Event& iEvent, const edm::EventSetup& iSetup, t
     const reco::Muon& muon(muons->at(i));
     if ( (muon.type() & m_allowedTypeMask) == 0 ) continue;
     if ( (muon.type() & m_requiredTypeMask) != m_requiredTypeMask ) continue;
+    if ( muon.numberOfMatchedStations()<m_minMuonStations ) continue;
     if ( !muon.innerTrack().isNull() ){
       if (muon.innerTrack()->numberOfValidHits()<m_minTrkHits) continue;
     }

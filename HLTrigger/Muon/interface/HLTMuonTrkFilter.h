@@ -25,6 +25,7 @@ class HLTMuonTrkFilter : public HLTFilter {
   edm::EDGetTokenT<reco::RecoChargedCandidateCollection> m_candsToken; // input collection of candidates to be referenced
   int m_minTrkHits;
   int m_minMuonHits;
+  int m_minMuonStations;
   unsigned int m_allowedTypeMask;
   unsigned int m_requiredTypeMask;
   double m_maxNormalizedChi2;
